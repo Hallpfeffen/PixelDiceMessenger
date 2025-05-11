@@ -26,6 +26,7 @@ async function getUrlInfo(url) {
 // Helper: Send message to Messenger Group (thread)
 async function sendToMessengerGroup(message) {
     const url = `https://graph.facebook.com/v18.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`;
+    console.log(url);
     const payload = {
         recipient: { thread_key: GROUP_THREAD_ID },
         message: { text: message }
@@ -35,15 +36,19 @@ async function sendToMessengerGroup(message) {
 
 // Endpoint: Accept a POST with { url: "https://..." }
 app.post('/send-url', async (req, res) => {
-    const { url } = req.body;
-    if (!url) return res.status(400).json({ error: 'Missing URL' });
+    
+    const { faceValue } = req.body;
+    if (!faceValue) return res.status(400).json({ error: 'Missing URL' });
 
-    const info = await getUrlInfo(url);
-    const message = `Shared URL: ${url}\nTitle: ${info.title}\nDescription: ${info.description}`;
+    const message = `Roll Result: ${faceValue}`;
     try {
+        console.log(message);
+
         await sendToMessengerGroup(message);
         res.json({ status: 'sent', message });
     } catch (err) {
+        console.log(err.message);
+
         res.status(500).json({ error: 'Failed to send to Messenger', details: err.message });
     }
 });
