@@ -25,8 +25,10 @@ async function getUrlInfo(url) {
 
 // Helper: Send message to Messenger Group (thread)
 async function sendToMessengerGroup(message) {
-    const url = `https://graph.facebook.com/v18.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`;
+    const url = `https://graph.facebook.com/v22.0/me/conversations?access_token=${PAGE_ACCESS_TOKEN}`;
     console.log(url);
+    console.log(GROUP_THREAD_ID);
+    console.log(message);
     const payload = {
         recipient: { thread_key: GROUP_THREAD_ID },
         message: { text: message }
