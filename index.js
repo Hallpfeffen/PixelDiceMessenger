@@ -8,45 +8,58 @@ app.use(express.json());
 
 // Load your tokens and IDs from .env
 const PAGE_ACCESS_TOKEN = process.env.PAGE_ACCESS_TOKEN;
-const GROUP_THREAD_ID = process.env.GROUP_THREAD_ID;
+const PSIDS = process.env.PSIDS;
 
-// Helper: Fetch page title and description from a URL
-async function getUrlInfo(url) {
-    try {
-        const { data } = await axios.get(url, { timeout: 5000 });
-        const $ = cheerio.load(data);
-        const title = $('title').first().text();
-        const description = $('meta[name="description"]').attr('content') || '';
-        return { title, description };
-    } catch (err) {
-        return { title: 'Unable to fetch', description: '' };
-    }
-}
+const sendMessage = async (recipientId, messageText) => {
+  const url = 'https://graph.facebook.com/v22.0/676526092206627/messages';
+  const payload = {
+    recipient: { id: recipientId },
+    message: { text: messageText },
+    messaging_type: "RESPONSE",
+    access_token: PAGE_ACCESS_TOKEN
+  };
 
-// Helper: Send message to Messenger Group (thread)
-async function sendToMessengerGroup(message) {
-    const url = `https://graph.facebook.com/v22.0/me/conversations?access_token=${PAGE_ACCESS_TOKEN}`;
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${PAGE_ACCESS_TOKEN}`,
+      },
+      body: JSON.stringify(payload),
+    });
     console.log(url);
-    console.log(GROUP_THREAD_ID);
-    console.log(message);
-    const payload = {
-        recipient: { thread_key: GROUP_THREAD_ID },
-        message: { text: message }
-    };
-    await axios.post(url, payload);
-}
+    console.log(payload);
+    console.log(response.status);
+    if (!response.ok) {
+      const errorDetails = await response.json();
+      console.error('Error details:', errorDetails);
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log('Message sent successfully:', result);
+  } catch (error) {
+    console.error('Error sending message:', error);
+  }
+};
 
 // Endpoint: Accept a POST with { url: "https://..." }
 app.post('/send-url', async (req, res) => {
     
     const { faceValue } = req.body;
-    if (!faceValue) return res.status(400).json({ error: 'Missing URL' });
+    const { actionValue } = req.body
+    if (!faceValue) return res.status(400).json({ error: 'Missing faceValue' });
+    if (!actionValue) return res.status(400).json({ error: 'Missing actionValue' });
 
-    const message = `Roll Result: ${faceValue}`;
+
+    const message = `${actionValue}: ${faceValue}`;
     try {
         console.log(message);
+        PSIDS.forEach(psid => {
+          sendMessage(psid, message)
+        });
 
-        await sendToMessengerGroup(message);
         res.json({ status: 'sent', message });
     } catch (err) {
         console.log(err.message);
